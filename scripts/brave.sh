@@ -1,0 +1,1 @@
+open -a "Brave Browser" 'https://api.telegram.org/botTOKEN_BOT/setWebhook?url=URL_BOT_NGROK/OdMaBot/BookieBot/' 
