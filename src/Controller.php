@@ -62,9 +62,11 @@ class Controller{
                 $action_message = $this->command->makeAction();
                 if($action_message != NULL)
                     $this->request::sendMessage(
-                        $action_message
-                );
+                        $action_message);
+            } else {
                 
+        
+                $this->command->setOperation($this->user->getAction());                   
             }
         }
     }

@@ -18,6 +18,8 @@ class Command{
     private $privileges;
     private $attachment;
     private $entities;
+    private $response;
+    private $user_action;
 
     public function __construct(&$connection, $text, $user, $entities) {
         $this->connection = $connection;
@@ -75,11 +77,9 @@ class Command{
                 // case corrispondente a quando l'utente chiede /info, /start /regole etc.
                 return $this->user->getMenu() > 0 ? $this->getMessage(true) : $this->getMessage();
                 break;
-
-            // case "booking": 
-            //     //chiedere in questo caso l'orario per la prenotazione
-            //     break;
-
+            case "bookASeat":
+                return $this->bookASeat();
+                break;
             //inserire tutti i casi delle azioni che può intraprendere l'utente ("booking")
         }   
     }
@@ -113,11 +113,22 @@ class Command{
     public function setOperation($user_action){
         $this->user_action = $user_action;
 
-        if ($this->command == '/annulla'){
-            $this->response::sendMessage($this->getMessage(true));
-        } else {
-            // tutte le altre operazioni
-        }   
+        if ($user_action == 'booking'){
+            if ($this->command == '/annulla'){ 
+                $this->response::sendMessage($this->getMessage(true));
+            } else if ($this->command == '/prenota') {
+                $this->response::sendMessage($this->httpAnswer('Stai già prenotando...'));
+            } else if (strtolower($this->text) == 'mattina' || $this->text == 'Mattina 😴') {
+                $this->answer = "Implementare prenotazione per la mattina... (simulazione prenotazione avvenuta)";
+                $this->response::sendMessage($this->getMessage(true));
+            } else if (strtolower($this->text) == 'pomeriggio' || $this->text == 'Pomeriggio ☕️') {
+                $this->answer = "Implementare prenotazione per il pomeriggio... (simulazione prenotazione avvenuta)";
+                $this->response::sendMessage($this->getMessage(true));
+            } else if ($this->text == 'Mattina e pomeriggio 🐙') {
+                $this->answer = "Implementare prenotazione per mattina+pomeriggio... (simulazione prenotazione avvenuta)";
+                $this->response::sendMessage($this->getMessage(true));
+            }
+        }
     }
 
     private function activateMenu(){
@@ -128,7 +139,7 @@ class Command{
         
         $keyboard = NULL;
         if ($changeMenu){ // torna alla keyboard precedente
-            $keyboard = $this->changeUserMenu($this->user->getMenu()-1, NULL, true);
+            $keyboard = $this->changeUserMenu($this->user->getMenu()-1, NULL);
         }
 
         return $this->httpAnswer($this->answer, $keyboard);
@@ -142,7 +153,20 @@ class Command{
     }
 
     private function bookASeat(){
+        if($this->user->getMenu() == 0)
+            return $this->httpAnswer($this->answer, $this->changeUserMenu(1, 'booking'));
+        else if ($this->user->getAction() == 'booking')
+            return $this->httpAnswer("Si lo so che vuoi prenotare... Mattina, pomeriggio o entrambi?");
     }
+
+    private function changeUserMenu($menu, $action){ //refresh = true, viene refreshata la keyboard
+        $sql = "UPDATE users SET menu=?, action=? WHERE chat_id=?"; 
+        $stmt= $this->connection->prepare($sql);
+        $stmt->execute([$menu, $action, $this->user->getChatID()]);
+
+        return $this->setKeyboard($menu);
+    }
+
 
     // ritorna la keyboard composta da tutti i bottoni settati a db
     public function setKeyboard($menu){
